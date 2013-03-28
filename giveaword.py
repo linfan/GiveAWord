@@ -188,7 +188,7 @@ def giveAWord():
     correct = True
     times = 0
     while ans != word:
-        ans = input('it\'s : ')
+        ans = input('it\'s : ').strip(' \t')
         if ans == '?':
             print(word)
             correct = False
