@@ -88,7 +88,8 @@ def addUserWordsFromFile(file):
         print('[ ERROR ] Dictionary file missing.')
         sys.exit(1)
     if not os.access(file, os.W_OK):
-        print('[ ERROR ] Cannot write file ', file)
+        print('Add words from file..')
+        print('[ ERROR ] Cannot access file \'', file, '\'')
         sys.exit(1)
     with open(DICT_FILE) as fileObj:
         allWordInfos = fileObj.readlines()
