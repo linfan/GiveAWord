@@ -2,7 +2,7 @@
 #=============================================================================
 #     FileName: read_db.py
 #         Desc: read baicizhan db folder, create resource files for giveaword
-#      Version: 3.0.0
+#      Version: 3.1.0
 #=============================================================================
 '''
 
@@ -35,6 +35,7 @@ T_ATTROPTIONS = 11
 T_ETYMA = 11
 T_DEFORMATION_IMG = 12
 T_DEFORMATION_DESC = 13
+T_ALTEREXAMPLE = 14
 
 # ZTOPICRESOURCEWORDEXTRA table index
 P_TOPIC = 0
@@ -55,7 +56,9 @@ def read_baicizhantopic_db():
     word_info = cs.fetchone()
     while word_info != None:
         item = list(word_info)
-        item.extend(['', '']) # add two blank index
+        item.extend(['', '', '']) # add two blank index
+        item[T_WORDVIDEO] = item[T_WORDVIDEO].replace('.dat', '.mp3')
+        item[T_SENTENCEVIDEO] = item[T_SENTENCEVIDEO].replace('.dat', '.mp3')
         word_list.append(item)
         word_info = cs.fetchone()
     conn.close()
@@ -73,6 +76,7 @@ def read_baicizhantopicwordmean_db():
                 item[T_DEFORMATION_IMG] = additional_info[P_DEFORMATION_IMG]
                 item[T_DEFORMATION_DESC] = additional_info[P_DEFORMATION_DESC]
                 item[T_WORDMEAN_EN] = additional_info[P_WORDMEAN_EN]
+                item[T_ALTEREXAMPLE] = additional_info[P_EXAMPLE]
                 attr_options = json.loads(item[T_ATTROPTIONS])
                 if len(attr_options[0]['attr_value']) > 0 and 'word_etyma_desc' in attr_options[0]['attr_value'][0].keys():
                     item[T_ETYMA] = attr_options[0]['attr_value'][0]['word_etyma_desc']
