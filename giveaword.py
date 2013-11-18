@@ -1,7 +1,7 @@
 '''
 #=============================================================================
 #     FileName: giveaword.py
-#      Version: 2.1.0
+#      Version: 2.1.1
 #=============================================================================
 '''
 import sqlite3
@@ -98,6 +98,7 @@ def closeDictDb():
             INFO_TABLE, int(time.time()), user_info[I_STUDYREVIEWBALANCE]))
         db_conn.commit()
         db_conn.close()
+        db_conn = None
 
 def getUserInfo():
     ''' Get information in INFO table '''
@@ -293,6 +294,7 @@ def giveAWord():
     if isNewWord:
         showWordInfo(word)
     else:
+        print('>> ', end = '')
         showWordMeaning(word)
     ans = ""
     correct = True
@@ -337,7 +339,7 @@ def main():
             usage="Usage: %prog [options] [word]\nTry '%prog --help' for more options")
     parser.set_defaults(optShowPicture = False, optPrintTranslation = False,
             optShowRawRecord = False, optForceNewWord = False, optForceReview = False,
-            optPlayAudio = False)
+            optPlayAudio = False, optRepeatTimes = 1)
     parser.add_option("-p", "--show-picture", dest="optShowPicture", 
             action="store_true", help="show image of the word")
     parser.add_option("-a", "--play-audio", dest="optPlayAudio",
@@ -350,12 +352,15 @@ def main():
             action="store_true", help="do not review a learned word")
     parser.add_option("-r", "--force-review", dest="optForceReview",
             action="store_true", help="always review a learned word")
+    parser.add_option("-t", "--repeat-times", dest="optRepeatTimes",
+            action="store", help="play giveaword n times")
     (opts, args) = parser.parse_args()
     options = opts
     if args:
         lookUpAWord(args[0])
     else:
-        giveAWord()
+        for time in list(range(int(options.optRepeatTimes))):
+            giveAWord()
 
 if __name__ == '__main__':
     main()
