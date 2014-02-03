@@ -1,8 +1,8 @@
 '''
 #=============================================================================
 #     FileName: create_dict.py
-#         Desc: read baicizhan db folder, create database file for giveaword
-#      Version: 1.0.0
+#         Desc: read baicizhan db folder, create database and resource file for giveaword
+#      Version: 2.1.0
 #=============================================================================
 '''
 
@@ -104,7 +104,7 @@ def read_baicizhantopicwordmean_db():
                 item[T_SENTENCETRANS] = additional_info[P_SENTENCE_TRANS]
                 item[T_DEFORMATION_IMG] = additional_info[P_DEFORMATION_IMG]
                 if item[T_DEFORMATION_IMG]:
-                    item[T_DEFORMATION_IMG] = './book_deformation/{}.{}'.format(item[T_WORD], 
+                    item[T_DEFORMATION_IMG] = './book_deformation/{}.{}'.format(item[T_WORD],
                         item[T_DEFORMATION_IMG].rsplit('.', 1)[1]).replace(' ', '_');
                 item[T_DEFORMATION_DESC] = additional_info[P_DEFORMATION_DESC]
                 item[T_WORDMEAN_EN] = additional_info[P_WORDMEAN_EN]
@@ -122,6 +122,39 @@ def read_baicizhantopicwordmean_db():
                 break;
         additional_info = cs.fetchone()
     conn.close()
+
+# Create folder
+def create_folder(folder):
+    try:
+        os.mkdir(folder)
+    except OSError or FileExistsError:
+        print('[OMIT] folder {} already exist.'.format(folder))
+        return False
+    return True
+
+# Copy files
+def copy_files(folder, word, field):
+    target_path = './{}/{}.{}'.format(folder, word[T_WORD], word[field].rsplit('.', 1)[1]).replace(' ', '_');
+    try:
+        shutil.copy('.{}baicizhan'.format(word[field].rstrip(alphabet)), target_path)
+    except OSError:
+        print('[FAILED] {} -> {}'.format(word[field], target_path))
+
+# Convert dictionary resource
+def convert_dict_recource():
+    if create_folder('book/book_images'):
+        for word in word_list: # copy image file
+            copy_files('book/book_images', word, T_IMAGEPATH)
+    if create_folder('book/book_pronounce'):
+        for word in word_list: # copy word pronounce file
+            copy_files('book/book_pronounce', word, T_WORDVIDEO)
+    if create_folder('book/book_sentence'):
+        for word in word_list: # copy sentence pronounce file
+            copy_files('book/book_sentence', word, T_SENTENCEVIDEO)
+    if create_folder('book/book_deformation'):
+        for word in word_list: # copy deformation image file
+            if word[T_DEFORMATION_IMG]:
+                copy_files('book/book_deformation', word, T_DEFORMATION_IMG)
 
 def is_table_exist(cursor, table_name):
     cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' and name='{}';".format(table_name))
@@ -178,7 +211,10 @@ def write_word_db():
 def generate_word_db():
     read_baicizhantopic_db()
     read_baicizhantopicwordmean_db()
+    print('total {} words.'.format(len(word_list)))
     write_word_db()
+    create_folder('book')
+    convert_dict_recource()
 
 if __name__ == '__main__':
     generate_word_db()
