@@ -375,7 +375,7 @@ def main():
     global options
     signal.signal(signal.SIGINT, handle)
     parser = OptionParser(version="%prog v{}".format(APP_VERSION),
-            usage="Usage: %prog [options] [word]\nTry '%prog --help' for more options")
+            usage="Usage: %prog [options] [word [page number]]\nTry '%prog --help' for more options")
     parser.set_defaults(optShowPicture = False, optPrintTranslation = False,
             optShowRawRecord = False, optForceNewWord = False, optForceReview = False,
             optPlayAudio = False, optRepeatTimes = 1)
