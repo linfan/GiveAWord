@@ -1,8 +1,8 @@
 '''
 #=============================================================================
-#     FileName: create_dict.py
+#     FileName: dictionary_converter.py
 #         Desc: read baicizhan db folder, create database and resource file for giveaword
-#      Version: 2.1.0
+#      Version: 2.3.0
 #=============================================================================
 '''
 
@@ -72,29 +72,40 @@ D_WRONGANSWERTIMES = 17
 D_REPEATTHISTIME = 18
 
 # Read baicizhantopic.db
-def read_baicizhantopic_db():
-    conn = sqlite3.connect('baicizhantopic.db')
+def read_baicizhantopic_db(src_folder):
+    database_path = src_folder + os.sep + 'baicizhantopic.db'
+    print('Reading database: {}'.format(database_path))
+    conn = sqlite3.connect(database_path)
     cs = conn.cursor()
     cs.execute('select * from ZTOPICRESOURCE;')
     word_info = cs.fetchone()
     while word_info != None:
         item = list(word_info)
-        item.extend(['', '', '']) # add two blank index
-        item[T_IMAGEPATH] = './book_images/{}.{}'.format(
-                item[T_WORD], item[T_IMAGEPATH].rsplit('.', 1)[1]).replace(' ', '_');
-        item[T_WORDVIDEO] = item[T_WORDVIDEO].replace('.dat', '.mp3')
-        item[T_WORDVIDEO] = './book_pronounce/{}.{}'.format(
-                item[T_WORD], item[T_WORDVIDEO].rsplit('.', 1)[1]).replace(' ', '_');
-        item[T_SENTENCEVIDEO] = item[T_SENTENCEVIDEO].replace('.dat', '.mp3')
-        item[T_SENTENCEVIDEO] = './book_sentence/{}.{}'.format(
-                item[T_WORD], item[T_SENTENCEVIDEO].rsplit('.', 1)[1]).replace(' ', '_');
+        item.extend(['', '', '']) # add 3 blank fields
         word_list.append(item)
         word_info = cs.fetchone()
     conn.close()
 
+# Modify resource path to the real destination
+def transform_resource_path():
+    for item in word_list:
+        item[T_IMAGEPATH] = './dict_images/{}.{}'.format(
+                item[T_WORD], item[T_IMAGEPATH].rsplit('.', 1)[1]).replace(' ', '_');
+        item[T_WORDVIDEO] = item[T_WORDVIDEO].replace('.dat', '.mp3')
+        item[T_WORDVIDEO] = './dict_pronounce/{}.{}'.format(
+                item[T_WORD], item[T_WORDVIDEO].rsplit('.', 1)[1]).replace(' ', '_');
+        item[T_SENTENCEVIDEO] = item[T_SENTENCEVIDEO].replace('.dat', '.mp3')
+        item[T_SENTENCEVIDEO] = './dict_sentence/{}.{}'.format(
+                item[T_WORD], item[T_SENTENCEVIDEO].rsplit('.', 1)[1]).replace(' ', '_');
+        if item[T_DEFORMATION_IMG]:
+            item[T_DEFORMATION_IMG] = './dict_deformation/{}.{}'.format(item[T_WORD],
+                item[T_DEFORMATION_IMG].rsplit('.', 1)[1]).replace(' ', '_');
+
 # Read baicizhantopicwordmean.db
-def read_baicizhantopicwordmean_db():
-    conn = sqlite3.connect('baicizhantopicwordmean.db')
+def read_baicizhantopicwordmean_db(src_folder):
+    database_path = src_folder + os.sep + 'baicizhantopicwordmean.db'
+    print('Reading database: {}'.format(database_path))
+    conn = sqlite3.connect(database_path)
     cs = conn.cursor()
     cs.execute('select * from ZTOPICRESOURCEWORDEXTRA;')
     additional_info = cs.fetchone()
@@ -103,9 +114,6 @@ def read_baicizhantopicwordmean_db():
             if item[T_TOPIC] == additional_info[P_TOPIC]:
                 item[T_SENTENCETRANS] = additional_info[P_SENTENCE_TRANS]
                 item[T_DEFORMATION_IMG] = additional_info[P_DEFORMATION_IMG]
-                if item[T_DEFORMATION_IMG]:
-                    item[T_DEFORMATION_IMG] = './book_deformation/{}.{}'.format(item[T_WORD],
-                        item[T_DEFORMATION_IMG].rsplit('.', 1)[1]).replace(' ', '_');
                 item[T_DEFORMATION_DESC] = additional_info[P_DEFORMATION_DESC]
                 item[T_WORDMEAN_EN] = additional_info[P_WORDMEAN_EN]
                 item[T_ALTEREXAMPLE] = additional_info[P_EXAMPLE]
@@ -123,7 +131,7 @@ def read_baicizhantopicwordmean_db():
         additional_info = cs.fetchone()
     conn.close()
 
-# Create folder
+# Create folder, report to teminate if folder already exist
 def create_folder(folder):
     try:
         os.mkdir(folder)
@@ -132,29 +140,40 @@ def create_folder(folder):
         return False
     return True
 
-# Copy files
-def copy_files(folder, word, field):
-    target_path = './{}/{}.{}'.format(folder, word[T_WORD], word[field].rsplit('.', 1)[1]).replace(' ', '_');
+# Copy image file
+def copy_image(src_folder, dst_folder, word, field):
+    source_path = '{}{}baicizhan'.format(src_folder, word[field].rstrip(alphabet))
+    target_path = './{}/{}.{}'.format(dst_folder, word[T_WORD], word[field].rsplit('.', 1)[1]).replace(' ', '_');
+    copy_file(source_path, target_path)
+
+# Copy audio file
+def copy_audio(src_folder, dst_folder, word, field):
+    source_path = '{}{}baicizhan'.format(src_folder, word[field].rstrip(alphabet))
+    target_path = './{}/{}.{}'.format(dst_folder, word[T_WORD], 'mp3').replace(' ', '_');
+    copy_file(source_path, target_path)
+
+# Copy file, report to teminate if target already exist
+def copy_file(source_path, target_path):
     try:
-        shutil.copy('.{}baicizhan'.format(word[field].rstrip(alphabet)), target_path)
+        shutil.copy(source_path, target_path)
     except OSError:
-        print('[FAILED] {} -> {}'.format(word[field], target_path))
+        print('[FAILED] {} -> {}'.format(source_path, target_path))
 
 # Convert dictionary resource
-def convert_dict_recource():
-    if create_folder('book/book_images'):
+def convert_dict_recource(src_folder):
+    if create_folder('dict_images'):
         for word in word_list: # copy image file
-            copy_files('book/book_images', word, T_IMAGEPATH)
-    if create_folder('book/book_pronounce'):
+            copy_image(src_folder, 'dict_images', word, T_IMAGEPATH)
+    if create_folder('dict_pronounce'):
         for word in word_list: # copy word pronounce file
-            copy_files('book/book_pronounce', word, T_WORDVIDEO)
-    if create_folder('book/book_sentence'):
+            copy_audio(src_folder, 'dict_pronounce', word, T_WORDVIDEO)
+    if create_folder('dict_sentence'):
         for word in word_list: # copy sentence pronounce file
-            copy_files('book/book_sentence', word, T_SENTENCEVIDEO)
-    if create_folder('book/book_deformation'):
+            copy_audio(src_folder, 'dict_sentence', word, T_SENTENCEVIDEO)
+    if create_folder('dict_deformation'):
         for word in word_list: # copy deformation image file
             if word[T_DEFORMATION_IMG]:
-                copy_files('book/book_deformation', word, T_DEFORMATION_IMG)
+                copy_image(src_folder, 'dict_deformation', word, T_DEFORMATION_IMG)
 
 def is_table_exist(cursor, table_name):
     cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' and name='{}';".format(table_name))
@@ -209,12 +228,17 @@ def write_word_db():
     conn.close()
 
 def generate_word_db():
-    read_baicizhantopic_db()
-    read_baicizhantopicwordmean_db()
+    # baicizhan dictionary folder
+    src_folder = '.'
+    if len(sys.argv) > 0:
+        src_folder = sys.argv[1].rstrip(os.sep)
+    print('Reading dictionary from {}/ folder..'.format(src_folder))
+    read_baicizhantopic_db(src_folder)
+    read_baicizhantopicwordmean_db(src_folder)
     print('total {} words.'.format(len(word_list)))
+    convert_dict_recource(src_folder)
+    transform_resource_path()
     write_word_db()
-    create_folder('book')
-    convert_dict_recource()
 
 if __name__ == '__main__':
     generate_word_db()

@@ -1,2 +1,8 @@
 history/*
 workspace/*
+tags
+dict_images/*
+dict_deformation/*
+dict_pronounce/*
+dict_sentence/*
+dict.db
