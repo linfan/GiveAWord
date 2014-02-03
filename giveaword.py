@@ -1,7 +1,7 @@
 '''
 #=============================================================================
 #     FileName: giveaword.py
-#      Version: 2.1.1
+#      Version: 2.3.0
 #=============================================================================
 '''
 import sqlite3
@@ -10,10 +10,16 @@ import sys, re, os, signal
 from optparse import OptionParser
 
 # Global constant
-APP_VERSION = 1.0
+APP_VERSION = 2.3
 BALANCE_LOW_LEVEL = -9
 BALANCE_HIGH_LEVEL = 5
 MAXIMUM_REVIEW_TIME = 99
+
+# Global variable
+db_conn = None
+db_cursor = None
+options = None
+user_info = None
 
 # Database file
 WORK_DIR = sys.path[0]
@@ -46,12 +52,6 @@ D_REPEATTHISTIME = 18
 I_USER = 0
 I_LASTUSETIME = 1
 I_STUDYREVIEWBALANCE = 2
-
-# Global variable
-db_conn = None
-db_cursor = None
-options = None
-user_info = None
 
 # Alternative charactor unprintable phonetic symbol
 PHONETIC_MAP = { '\u00E6':'@', '\u00F0':'6', '\u014B':'n', '\u0251':'a', '\u0252':'o',
@@ -263,12 +263,21 @@ def showWordInfo(word):
     if options.optPrintTranslation and word[D_ETYMA] != 'NULL':
          print('[Etyma] {}'.format(word[D_ETYMA]))
 
+def isEnglishWord(a_str):
+    for c in a_str:
+        if not ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z')):
+            return False
+    return True
+
 # Major functions
 
 def lookUpAWord(letters):
     ''' Main enter of looking up a word '''
     openDictDb()
-    word = searchOneRecordFromDb("WORD = '{}'".format(letters.replace("'", "''")))
+    if isEnglishWord(letters[0]):
+        word = searchOneRecordFromDb("WORD = '{}'".format(letters.replace("'", "''")))
+    else:
+        word = searchOneRecordFromDb("WORDMEANTRANS like '%{}%'".format(letters.replace("'", "''")))
     if word!= None:
         showWordInfo(word)
     else:
@@ -340,7 +349,7 @@ def main():
     parser.set_defaults(optShowPicture = False, optPrintTranslation = False,
             optShowRawRecord = False, optForceNewWord = False, optForceReview = False,
             optPlayAudio = False, optRepeatTimes = 1)
-    parser.add_option("-p", "--show-picture", dest="optShowPicture", 
+    parser.add_option("-p", "--show-picture", dest="optShowPicture",
             action="store_true", help="show image of the word")
     parser.add_option("-a", "--play-audio", dest="optPlayAudio",
             action="store_true", help="play pronounce of the word")

@@ -1,6 +1,6 @@
 '''
 #=============================================================================
-#     FileName: dictionary_converter.py
+#     FileName: convert_dict.py
 #         Desc: read baicizhan db folder, create database and resource file for giveaword
 #      Version: 2.3.0
 #=============================================================================
@@ -11,6 +11,13 @@ import json
 import os, glob, shutil
 import sys
 import re
+from optparse import OptionParser
+
+# Global constant
+APP_VERSION = 2.3
+
+# Global variable
+options = None
 
 # word list
 word_list = []
@@ -132,11 +139,13 @@ def read_baicizhantopicwordmean_db(src_folder):
     conn.close()
 
 # Create folder, report to teminate if folder already exist
-def create_folder(folder):
+def create_folder(folder, suppressError):
     try:
         os.mkdir(folder)
+        print('[INFO] folder {} created.'.format(folder))
     except OSError or FileExistsError:
-        print('[OMIT] folder {} already exist.'.format(folder))
+        if not suppressError:
+            print('[OMIT] folder {} already exist.'.format(folder))
         return False
     return True
 
@@ -161,16 +170,17 @@ def copy_file(source_path, target_path):
 
 # Convert dictionary resource
 def convert_dict_recource(src_folder):
-    if create_folder('dict_images'):
+    global options
+    if create_folder('dict_images', options.optAppendMode):
         for word in word_list: # copy image file
             copy_image(src_folder, 'dict_images', word, T_IMAGEPATH)
-    if create_folder('dict_pronounce'):
+    if create_folder('dict_pronounce', options.optAppendMode):
         for word in word_list: # copy word pronounce file
             copy_audio(src_folder, 'dict_pronounce', word, T_WORDVIDEO)
-    if create_folder('dict_sentence'):
+    if create_folder('dict_sentence', options.optAppendMode):
         for word in word_list: # copy sentence pronounce file
             copy_audio(src_folder, 'dict_sentence', word, T_SENTENCEVIDEO)
-    if create_folder('dict_deformation'):
+    if create_folder('dict_deformation', options.optAppendMode):
         for word in word_list: # copy deformation image file
             if word[T_DEFORMATION_IMG]:
                 copy_image(src_folder, 'dict_deformation', word, T_DEFORMATION_IMG)
@@ -180,11 +190,13 @@ def is_table_exist(cursor, table_name):
     return (cursor.fetchone()[0] != 0)
 
 def write_word_db():
+    global options
     conn = sqlite3.connect('dict.db')
     cs = conn.cursor()
-    if is_table_exist(cs, 'DICT'):
+    if (not options.optAppendMode) and is_table_exist(cs, 'DICT'):
         cs.execute("DROP TABLE DICT")
-    cs.execute("CREATE TABLE DICT (WORD VARCHAR, PHONETIC VARCHAR, WORDMEAN VARCHAR, WORDMEANTRANS VARCHAR, SENTENCE VARCHAR, SENTENCETRANS VARCHAR, WORDVARIANTS VARCHAR, ETYMA VARCHAR, ALTEREXAMPLE VARCHAR, SENTENCEIMAGE VARCHAR, DEFORMATIONIMG VARCHAR, DEFORMATIONDESC VARCHAR, PRONOUNCEAUDIO VARCHAR, SENTENCEAUDIO VARCHAR, UPDATEDATE INTEGER, SCORE INTEGER, CORRECTANSWERTIMES INTEGER, WRONGANSWERTIMES INTEGER, REPEATTHISTIME INTEGER);")
+    if not is_table_exist(cs, 'DICT'):
+        cs.execute("CREATE TABLE DICT (WORD VARCHAR PRIMARY KEY, PHONETIC VARCHAR, WORDMEAN VARCHAR, WORDMEANTRANS VARCHAR, SENTENCE VARCHAR, SENTENCETRANS VARCHAR, WORDVARIANTS VARCHAR, ETYMA VARCHAR, ALTEREXAMPLE VARCHAR, SENTENCEIMAGE VARCHAR, DEFORMATIONIMG VARCHAR, DEFORMATIONDESC VARCHAR, PRONOUNCEAUDIO VARCHAR, SENTENCEAUDIO VARCHAR, UPDATEDATE INTEGER, SCORE INTEGER, CORRECTANSWERTIMES INTEGER, WRONGANSWERTIMES INTEGER, REPEATTHISTIME INTEGER);")
     for item in word_list:
         word = []
         word.append(item[T_WORD].replace("'","''"))
@@ -208,7 +220,7 @@ def write_word_db():
         word.append(0)
         word_dict.append(word)
     for item in word_dict:
-        command = "INSERT INTO DICT VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', {}, {}, {}, {}, {});".format(
+        command = "INSERT OR IGNORE INTO DICT VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', {}, {}, {}, {}, {});".format(
                 item[D_WORD], item[D_PHONETIC], item[D_WORDMEAN], item[D_WORDMEANTRANS], item[D_SENTENCE],
                 item[D_SENTENCETRANS], item[D_WORDVARIANTS], item[D_ETYMA], item[D_ALTEREXAMPLE],
                 item[D_SENTENCEIMAGE], item[D_DEFORMATIONIMG], item[D_DEFORMATIONDESC], item[D_PRONOUNCEAUDIO],
@@ -216,22 +228,31 @@ def write_word_db():
                 item[D_WRONGANSWERTIMES], item[D_REPEATTHISTIME])
         try:
             cs.execute(command)
-        except sqlite3.OperationalError:
-            print(sys.exc_info()[0],sys.exc_info()[1])
+        except (sqlite3.OperationalError, sqlite3.IntegrityError):
             print("[ERROR] " + command)
+            print(sys.exc_info()[0],sys.exc_info()[1])
             break
-    if is_table_exist(cs, 'INFO'):
+    if (not options.optAppendMode) and is_table_exist(cs, 'INFO'):
         cs.execute("DROP TABLE INFO")
-    cs.execute("CREATE TABLE INFO (USER VARCHAR, LASTUSETIME INTEGER, STUDYREVIEWBALANCE INTEGER);")
-    cs.execute("INSERT INTO INFO VALUES('LIN', 0, 0);")
+    if not is_table_exist(cs, 'INFO'):
+        cs.execute("CREATE TABLE INFO (USER VARCHAR, LASTUSETIME INTEGER, STUDYREVIEWBALANCE INTEGER);")
+        cs.execute("INSERT INTO INFO VALUES('LIN', 0, 0);")
     conn.commit()
     conn.close()
 
 def generate_word_db():
+    global options
     # baicizhan dictionary folder
     src_folder = '.'
-    if len(sys.argv) > 0:
-        src_folder = sys.argv[1].rstrip(os.sep)
+    parser = OptionParser(version="%prog v{}".format(APP_VERSION),
+            usage="Usage: %prog [options] [baicizhan_folder]\nTry '%prog --help' for more options")
+    parser.set_defaults(optAppendMode = False)
+    parser.add_option("-a", "--append", dest="optAppendMode",
+            action="store_true", help="Append new words into current dictionary")
+    (opts, args) = parser.parse_args()
+    options = opts
+    if args:
+        src_folder = args[0].rstrip(os.sep)
     print('Reading dictionary from {}/ folder..'.format(src_folder))
     read_baicizhantopic_db(src_folder)
     read_baicizhantopicwordmean_db(src_folder)
