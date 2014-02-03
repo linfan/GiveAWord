@@ -14,6 +14,7 @@ APP_VERSION = 2.3
 BALANCE_LOW_LEVEL = -9
 BALANCE_HIGH_LEVEL = 5
 MAXIMUM_REVIEW_TIME = 99
+BULK_LOOKUP_PAGE_SIZE = 5
 
 # Global variable
 db_conn = None
@@ -114,6 +115,8 @@ def searchDb(condition, order = None):
     else:
         command = "SELECT * FROM {} WHERE {};".format(DICT_TABLE, condition)
     try:
+        if options.optShowRawRecord:
+            print('[DEBUG] {}'.format(command))
         db_cursor.execute(command)
     except sqlite3.OperationalError:
         print(sys.exc_info()[0],sys.exc_info()[1])
@@ -131,9 +134,10 @@ def nextRecord():
     record = db_cursor.fetchone()
     if options.optShowRawRecord:
         if record:
+            print('[DEBUG]', end = ' ')
             print(record)
         else:
-            print('[DUMP] No more record.')
+            print('[DEBUG] No more record.')
     return record and list(record) or None
 
 def searchOneRecordFromDb(condition, order = None):
@@ -243,20 +247,26 @@ def showWordMeaning(word):
             print('[E.g.] {}'.format(word[D_SENTENCE]))
 
 def showWordDeformation(word):
-    ''' Show word deformation in  standard format '''
+    ''' Show word deformation in a standard format '''
     global options
     if options.optShowPicture and word[D_DEFORMATIONIMG] != 'NULL':
         showImage(word[D_DEFORMATIONIMG])
         if word[D_DEFORMATIONDESC] != 'NULL':
             print('[Tips] {}'.format(word[D_DEFORMATIONDESC]))
 
+def showWordBriefWithChinese(word):
+    print(word[D_WORD], end = ' ')
+    showWordPhonetic(word, False)
+    translation = word[D_WORDMEANTRANS].replace('\n', ' ').replace('\r', '')
+    print(translation)
+
 def showWordInfo(word):
     ''' Show word information in a standard format '''
     global options
     print(word[D_WORD], end = ' ')
-    showWordPhonetic(word, False)
-    showWordDeformation(word)
+    showWordPhonetic(word, True)
     showWordMeaning(word)
+    showWordDeformation(word)
     showWordSentence(word)
     if word[D_WORDVARIANTS] != 'NULL':
         print('[Variants] {}'.format(word[D_WORDVARIANTS]))
@@ -265,23 +275,43 @@ def showWordInfo(word):
 
 def isEnglishWord(a_str):
     for c in a_str:
-        if not ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z')):
+        if not ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or c == '?' or c == '*'):
             return False
     return True
 
+def lookUpInBulk(search_str, word_to_lookup, page):
+    if page == 'all':
+        word = searchOneRecordFromDb(search_str)
+    elif page.isdigit():
+        word = searchOneRecordFromDb('{} limit {} offset {}'.format(search_str,
+            BULK_LOOKUP_PAGE_SIZE, int(page) * BULK_LOOKUP_PAGE_SIZE))
+    else:
+        print("[ERROR] Invalid page number.")
+        return
+    if word == None:
+        if page == 'all':
+            print("[SORRY] Word '{}' no exist in dictionary.".format(word_to_lookup))
+        else:
+            print("[SORRY] Page number {} of word '{}' no exist.".format(page, word_to_lookup))
+    while word != None:
+        showWordBriefWithChinese(word)
+        word = nextRecord()
+
 # Major functions
 
-def lookUpAWord(letters):
+def lookUpAWord(letters, page = 'all'):
     ''' Main enter of looking up a word '''
     openDictDb()
-    if isEnglishWord(letters[0]):
+    if not isEnglishWord(letters):
+        lookUpInBulk("WORDMEANTRANS like '%{}%'".format(letters), letters, page)
+    elif letters.find('*') != -1 or letters.find('?') != -1:
+        lookUpInBulk("WORD like '{}'".format(letters.replace('*', '%').replace('?', '_')), letters, page)
+    else:
         word = searchOneRecordFromDb("WORD = '{}'".format(letters.replace("'", "''")))
-    else:
-        word = searchOneRecordFromDb("WORDMEANTRANS like '%{}%'".format(letters.replace("'", "''")))
-    if word!= None:
-        showWordInfo(word)
-    else:
-        print("[SORRY] Word '{}' no exist in dictionary.".format(letters))
+        if word!= None:
+            showWordInfo(word)
+        else:
+            print("[SORRY] Word '{}' no exist in dictionary.".format(letters))
     closeDictDb()
 
 def giveAWord():
@@ -337,7 +367,7 @@ def giveAWord():
 
 def handle(signum, frame):
     ''' Handling Ctrl+C operation '''
-    os.system('clear')
+    #os.system('clear')
     elegantExit()
 
 # Main function
@@ -365,11 +395,16 @@ def main():
             action="store", help="play giveaword n times")
     (opts, args) = parser.parse_args()
     options = opts
-    if args:
-        lookUpAWord(args[0])
-    else:
+    if len(args) == 0:
         for time in list(range(int(options.optRepeatTimes))):
             giveAWord()
+    elif len(args) == 1:
+        lookUpAWord(args[0])
+    elif len(args) == 2:
+        lookUpAWord(args[0], args[1])
+    else:
+        print(parser.get_usage())
 
 if __name__ == '__main__':
     main()
+

@@ -96,17 +96,13 @@ def read_baicizhantopic_db(src_folder):
 # Modify resource path to the real destination
 def transform_resource_path():
     for item in word_list:
-        item[T_IMAGEPATH] = './dict_images/{}.{}'.format(
-                item[T_WORD], item[T_IMAGEPATH].rsplit('.', 1)[1]).replace(' ', '_');
-        item[T_WORDVIDEO] = item[T_WORDVIDEO].replace('.dat', '.mp3')
-        item[T_WORDVIDEO] = './dict_pronounce/{}.{}'.format(
-                item[T_WORD], item[T_WORDVIDEO].rsplit('.', 1)[1]).replace(' ', '_');
-        item[T_SENTENCEVIDEO] = item[T_SENTENCEVIDEO].replace('.dat', '.mp3')
-        item[T_SENTENCEVIDEO] = './dict_sentence/{}.{}'.format(
-                item[T_WORD], item[T_SENTENCEVIDEO].rsplit('.', 1)[1]).replace(' ', '_');
+        item[T_IMAGEPATH] = './dict_images/{}.{}'.format( item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'),
+                item[T_IMAGEPATH].rsplit('.', 1)[1])
+        item[T_WORDVIDEO] = './dict_pronounce/{}.{}'.format( item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'), '.mp3')
+        item[T_SENTENCEVIDEO] = './dict_sentence/{}.{}'.format( item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'), '.mp3')
         if item[T_DEFORMATION_IMG]:
-            item[T_DEFORMATION_IMG] = './dict_deformation/{}.{}'.format(item[T_WORD],
-                item[T_DEFORMATION_IMG].rsplit('.', 1)[1]).replace(' ', '_');
+            item[T_DEFORMATION_IMG] = './dict_deformation/{}.{}'.format(item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'),
+                item[T_DEFORMATION_IMG].rsplit('.', 1)[1])
 
 # Read baicizhantopicwordmean.db
 def read_baicizhantopicwordmean_db(src_folder):
@@ -154,21 +150,24 @@ def create_folder(folder, suppressError):
 # Copy image file
 def copy_image(src_folder, dst_folder, word, field):
     source_path = '{}{}baicizhan'.format(src_folder, word[field].rstrip(alphabet))
-    target_path = './{}/{}.{}'.format(dst_folder, word[T_WORD], word[field].rsplit('.', 1)[1]).replace(' ', '_');
+    target_path = './{}/{}.{}'.format(dst_folder,
+            word[T_WORD].replace(' ', '_').replace(os.sep, '_@_'), word[field].rsplit('.', 1)[1])
     copy_file(source_path, target_path)
 
 # Copy audio file
 def copy_audio(src_folder, dst_folder, word, field):
     source_path = '{}{}baicizhan'.format(src_folder, word[field].rstrip(alphabet))
-    target_path = './{}/{}.{}'.format(dst_folder, word[T_WORD], 'mp3').replace(' ', '_');
+    target_path = './{}/{}.{}'.format(dst_folder,
+            word[T_WORD].replace(' ', '_').replace(os.sep, '_@_'), 'mp3')
     copy_file(source_path, target_path)
 
 # Copy file, report to teminate if target already exist
 def copy_file(source_path, target_path):
     try:
         shutil.copy(source_path, target_path)
-    except OSError:
-        print('[FAILED] {} -> {}'.format(source_path, target_path))
+    except (OSError, IOError):
+        print('[FAIL] {} -> {}'.format(source_path, target_path))
+        print(sys.exc_info()[0],sys.exc_info()[1])
 
 # Convert dictionary resource
 def convert_dict_recource(src_folder):
