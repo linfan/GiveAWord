@@ -144,7 +144,9 @@ def create_folder(folder, suppressError):
         os.mkdir(folder)
         print('[INFO] folder {} created.'.format(folder))
     except OSError or FileExistsError:
-        if not suppressError:
+        if suppressError:
+            print('[INFO] entering folder {}.'.format(folder))
+        else:
             print('[OMIT] folder {} already exist.'.format(folder))
         return False
     return True
@@ -171,17 +173,21 @@ def copy_file(source_path, target_path):
 # Convert dictionary resource
 def convert_dict_recource(src_folder):
     global options
-    if create_folder('dict_images', options.optAppendMode):
-        for word in word_list: # copy image file
+    # copy image file
+    if create_folder('dict_images', options.optAppendMode) or options.optAppendMode:
+        for word in word_list:
             copy_image(src_folder, 'dict_images', word, T_IMAGEPATH)
-    if create_folder('dict_pronounce', options.optAppendMode):
-        for word in word_list: # copy word pronounce file
+    # copy word pronounce file
+    if create_folder('dict_pronounce', options.optAppendMode) or options.optAppendMode:
+        for word in word_list:
             copy_audio(src_folder, 'dict_pronounce', word, T_WORDVIDEO)
-    if create_folder('dict_sentence', options.optAppendMode):
-        for word in word_list: # copy sentence pronounce file
+    # copy sentence pronounce file
+    if create_folder('dict_sentence', options.optAppendMode) or options.optAppendMode:
+        for word in word_list:
             copy_audio(src_folder, 'dict_sentence', word, T_SENTENCEVIDEO)
-    if create_folder('dict_deformation', options.optAppendMode):
-        for word in word_list: # copy deformation image file
+    # copy deformation image file
+    if create_folder('dict_deformation', options.optAppendMode) or options.optAppendMode:
+        for word in word_list:
             if word[T_DEFORMATION_IMG]:
                 copy_image(src_folder, 'dict_deformation', word, T_DEFORMATION_IMG)
 
@@ -220,7 +226,7 @@ def write_word_db():
         word.append(0)
         word_dict.append(word)
     for item in word_dict:
-        command = "INSERT OR IGNORE INTO DICT VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', {}, {}, {}, {}, {});".format(
+        command = "INSERT OR REPLACE INTO DICT VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', {}, {}, {}, {}, {});".format(
                 item[D_WORD], item[D_PHONETIC], item[D_WORDMEAN], item[D_WORDMEANTRANS], item[D_SENTENCE],
                 item[D_SENTENCETRANS], item[D_WORDVARIANTS], item[D_ETYMA], item[D_ALTEREXAMPLE],
                 item[D_SENTENCEIMAGE], item[D_DEFORMATIONIMG], item[D_DEFORMATIONDESC], item[D_PRONOUNCEAUDIO],
