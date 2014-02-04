@@ -98,8 +98,8 @@ def transform_resource_path():
     for item in word_list:
         item[T_IMAGEPATH] = './dict_images/{}.{}'.format( item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'),
                 item[T_IMAGEPATH].rsplit('.', 1)[1])
-        item[T_WORDVIDEO] = './dict_pronounce/{}.{}'.format( item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'), '.mp3')
-        item[T_SENTENCEVIDEO] = './dict_sentence/{}.{}'.format( item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'), '.mp3')
+        item[T_WORDVIDEO] = './dict_pronounce/{}.{}'.format( item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'), 'mp3')
+        item[T_SENTENCEVIDEO] = './dict_sentence/{}.{}'.format( item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'), 'mp3')
         if item[T_DEFORMATION_IMG]:
             item[T_DEFORMATION_IMG] = './dict_deformation/{}.{}'.format(item[T_WORD].replace(' ', '_').replace(os.sep, '_@_'),
                 item[T_DEFORMATION_IMG].rsplit('.', 1)[1])
