@@ -161,9 +161,9 @@ def showImage(filename, playOnBackground = True):
     global options
     if options.optShowPicture:
         if playOnBackground:
-            command = 'eog {}{} > /dev/null 2>&1 &'.format(WORK_DIR, filename[1:])
+            command = "eog '{}{}' > /dev/null 2>&1 &".format(WORK_DIR, filename[1:])
         else:
-            command = 'eog {}{} > /dev/null 2>&1'.format(WORK_DIR, filename[1:])
+            command = "eog '{}{}' > /dev/null 2>&1".format(WORK_DIR, filename[1:])
         if options.optDebugMode:
             print('[DEBUG] {}'.format(command))
         os.system(command)
@@ -173,9 +173,9 @@ def playAudio(filename, playOnBackground = True):
     global options
     if options.optPlayAudio:
         if playOnBackground:
-            command = 'mpg123 {}{} > /dev/null 2>&1 &'.format(WORK_DIR, filename[1:])
+            command = "mpg123 '{}{}' > /dev/null 2>&1 &".format(WORK_DIR, filename[1:])
         else:
-            command = 'mpg123 {}{} > /dev/null 2>&1'.format(WORK_DIR, filename[1:])
+            command = "mpg123 '{}{}' > /dev/null 2>&1".format(WORK_DIR, filename[1:])
         if options.optDebugMode:
             print('[DEBUG] {}'.format(command))
         os.system(command)
