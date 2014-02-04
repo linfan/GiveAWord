@@ -115,7 +115,7 @@ def searchDb(condition, order = None):
     else:
         command = "SELECT * FROM {} WHERE {};".format(DICT_TABLE, condition)
     try:
-        if options.optShowRawRecord:
+        if options.optDebugMode:
             print('[DEBUG] {}'.format(command))
         db_cursor.execute(command)
     except sqlite3.OperationalError:
@@ -132,7 +132,7 @@ def nextRecord():
     ''' Find the next record meet the condition '''
     global options, db_cursor
     record = db_cursor.fetchone()
-    if options.optShowRawRecord:
+    if options.optDebugMode:
         if record:
             print('[DEBUG]', end = ' ')
             print(record)
@@ -161,18 +161,24 @@ def showImage(filename, playOnBackground = True):
     global options
     if options.optShowPicture:
         if playOnBackground:
-            os.system('eog {}{} > /dev/null 2>&1 &'.format(WORK_DIR, filename[1:]))
+            command = 'eog {}{} > /dev/null 2>&1 &'.format(WORK_DIR, filename[1:])
         else:
-            os.system('eog {}{} > /dev/null 2>&1'.format(WORK_DIR, filename[1:]))
+            command = 'eog {}{} > /dev/null 2>&1'.format(WORK_DIR, filename[1:])
+        if options.optDebugMode:
+            print('[DEBUG] {}'.format(command))
+        os.system(command)
 
 def playAudio(filename, playOnBackground = True):
     ''' Play specific audio mp3 file '''
     global options
     if options.optPlayAudio:
         if playOnBackground:
-            os.system('mpg123 {}{} > /dev/null 2>&1 &'.format(WORK_DIR, filename[1:]))
+            command = 'mpg123 {}{} > /dev/null 2>&1 &'.format(WORK_DIR, filename[1:])
         else:
-            os.system('mpg123 {}{} > /dev/null 2>&1'.format(WORK_DIR, filename[1:]))
+            command = 'mpg123 {}{} > /dev/null 2>&1'.format(WORK_DIR, filename[1:])
+        if options.optDebugMode:
+            print('[DEBUG] {}'.format(command))
+        os.system(command)
 
 def updateAWord(word, isCorrect, scoreDelta):
     ''' Update word's last study time and score etc. '''
@@ -377,7 +383,7 @@ def main():
     parser = OptionParser(version="%prog v{}".format(APP_VERSION),
             usage="Usage: %prog [options] [word [page number]]\nTry '%prog --help' for more options")
     parser.set_defaults(optShowPicture = False, optPrintTranslation = False,
-            optShowRawRecord = False, optForceNewWord = False, optForceReview = False,
+            optDebugMode = False, optForceNewWord = False, optForceReview = False,
             optPlayAudio = False, optRepeatTimes = 1)
     parser.add_option("-p", "--show-picture", dest="optShowPicture",
             action="store_true", help="show image of the word")
@@ -385,7 +391,7 @@ def main():
             action="store_true", help="play pronounce of the word")
     parser.add_option("-c", "--chinese", dest="optPrintTranslation",
             action="store_true", help="show Chinese translation")
-    parser.add_option("-d", "--debug", dest="optShowRawRecord",
+    parser.add_option("-d", "--debug", dest="optDebugMode",
             action="store_true", help="dump database record for debug")
     parser.add_option("-n", "--force-new-word", dest="optForceNewWord",
             action="store_true", help="do not review a learned word")
