@@ -237,6 +237,7 @@ def showWordPhonetic(word, endLine = True):
         for k, v in PHONETIC_MAP.items():
             alternativePhonetic = alternativePhonetic.replace(k, v)
         print(alternativePhonetic)
+    sys.stdout.flush()
     playAudio(word[D_PRONOUNCEAUDIO], False)
 
 def showWordMeaning(word):
