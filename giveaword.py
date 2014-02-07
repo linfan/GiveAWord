@@ -70,6 +70,7 @@ PHONETIC_MAP = { '\u00E6':'@', '\u00F0':'6', '\u014B':'n', '\u0251':'a', '\u0252
 
 def elegantExit():
     ''' Close database and exit '''
+    print('')  # put a new line
     closeDictDb()
     sys.exit(-1)
 
@@ -348,10 +349,18 @@ def giveAWord():
     times = 0
     killTheWord = False
     while ans != word[D_WORD]:
-        ans = input('it\'s : ')
+        try:
+            ans = input('it\'s : ')
+        except EOFError:
+            elegantExit()
+        # answer Ctrl+v and Enter will trap into this case
+        if not ans:
+            continue
+        # anwser ! to do not show this work in future
         if ans[0] == '!' and len(ans) > 1:
             ans = ans[1:]
             killTheWord = True
+        # anwser ? to lookup this word
         if ans == '?':
             showWordInfo(word)
             correct = False
