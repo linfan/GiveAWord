@@ -228,16 +228,19 @@ def showWordSentence(word):
 
 def showWordPhonetic(word, endLine = True):
     ''' Show word phonetic and play pronunciation '''
+    ending = '\n'
     try:
-        if endLine:
-            print(word[D_PHONETIC])
+        if not endLine:
+            ending = ' '
+        if word[D_PHONETIC] != 'NULL':
+            print(word[D_PHONETIC], end = ending)
         else:
-            print(word[D_PHONETIC], end = ' ')
+            print(' ', end = ending)
     except UnicodeEncodeError:
         alternativePhonetic = word[D_PHONETIC]
         for k, v in PHONETIC_MAP.items():
             alternativePhonetic = alternativePhonetic.replace(k, v)
-        print(alternativePhonetic)
+        print(alternativePhonetic, end = ending)
     sys.stdout.flush()
     playAudio(word[D_PRONOUNCEAUDIO], False)
 
@@ -283,7 +286,7 @@ def showWordInfo(word):
 
 def isEnglishWord(a_str):
     for c in a_str:
-        if not ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or c == '?' or c == '*'):
+        if not ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or c == '?' or c == '*' or c == ' '):
             return False
     return True
 
