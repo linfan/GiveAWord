@@ -265,11 +265,16 @@ def showWordDeformation(word):
         if word[D_DEFORMATIONDESC] != 'NULL':
             print('[Tips] {}'.format(word[D_DEFORMATIONDESC]))
 
-def showWordBriefWithChinese(word):
+def showWordBrief(word):
+    ''' Show word spell, phonetic and meaning in brief '''
+    global options
     print(word[D_WORD], end = ' ')
     showWordPhonetic(word, False)
-    translation = word[D_WORDMEANTRANS].replace('\n', ' ').replace('\r', '')
-    print(translation)
+    if options.optPrintTranslation and word[D_WORDMEANTRANS] != 'NULL':
+        meaning = word[D_WORDMEANTRANS].replace('\n', ' ').replace('\r', '')
+    else:
+        meaning = word[D_WORDMEAN].replace('\n', ' ').replace('\r', '')
+    print(meaning)
 
 def showWordInfo(word):
     ''' Show word information in a standard format '''
@@ -285,12 +290,14 @@ def showWordInfo(word):
          print('[Etyma] {}'.format(word[D_ETYMA]))
 
 def isEnglishWord(a_str):
+    ''' Judge whether a string is a valid English word '''
     for c in a_str:
         if not ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or c == '?' or c == '*' or c == ' '):
             return False
     return True
 
 def lookUpInBulk(search_str, word_to_lookup, page):
+    ''' Show all matched result in brief '''
     if page == 'all':
         word = searchOneRecordFromDb(search_str)
     elif page.isdigit():
@@ -305,15 +312,18 @@ def lookUpInBulk(search_str, word_to_lookup, page):
         else:
             print("[SORRY] Page number {} of word '{}' no exist.".format(page, word_to_lookup))
     while word != None:
-        showWordBriefWithChinese(word)
+        showWordBrief(word)
         word = nextRecord()
 
 # Major functions
 
 def lookUpAWord(letters, page = 'all'):
     ''' Main enter of looking up a word '''
+    global options;
     openDictDb()
     if not isEnglishWord(letters):
+        # it's Chinese word
+        options.optPrintTranslation = True
         lookUpInBulk("WORDMEANTRANS like '%{}%'".format(letters), letters, page)
     elif letters.find('*') != -1 or letters.find('?') != -1:
         lookUpInBulk("WORD like '{}'".format(letters.replace('*', '%').replace('?', '_')), letters, page)
